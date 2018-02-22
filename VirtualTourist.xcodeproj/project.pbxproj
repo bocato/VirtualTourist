@@ -142,6 +142,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E5279ECD20395A3F00939E6D /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
 		E5279ED62039A1A500939E6D /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -398,6 +405,7 @@
 				E59783B020353E9400A88008 /* FlickrPhotosSearchResponse.swift */,
 				E59783B220353EBD00A88008 /* FlickrPhotos.swift */,
 				E59783B420353EC500A88008 /* FlickrPhoto.swift */,
+				E5279ECD20395A3F00939E6D /* Persistence */,
 			);
 			path = Flickr;
 			sourceTree = "<group>";
