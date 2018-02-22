@@ -2,7 +2,7 @@
 //  VirtualTouristUITests.swift
 //  VirtualTouristUITests
 //
-//  Created by Eduardo Sanches Bocato on 14/02/18.
+//  Created by Eduardo Sanches Bocato on 15/02/18.
 //  Copyright © 2018 Eduardo Sanches Bocato. All rights reserved.
 //
 
