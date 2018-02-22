@@ -38,6 +38,7 @@ class PhotoAlbumViewController: UIViewController {
     private var fetchedResultsController: NSFetchedResultsController<PersistedPhoto>!
     private var pages: Int?
     private var perPage: Int?
+    private var isLoadingCollectionView = false
     
     var insertedIndexPaths: [IndexPath]!
     var deletedIndexPaths: [IndexPath]!
@@ -112,7 +113,15 @@ class PhotoAlbumViewController: UIViewController {
     }
     
     func updateSelectedItemsCountForTappedCollectionView(_ collectionView: UICollectionView, indexPath: IndexPath){
-        self.selectedItemsCount = collectionView.indexPathsForSelectedItems?.count ?? 0
+        selectedItemsCount = collectionView.indexPathsForSelectedItems?.count ?? 0
+    }
+    
+    func updateCollectionViewVisibility() {
+        guard let fetchedObjects =  fetchedResultsController.fetchedObjects else {
+            collectionView.isHidden = true
+            return
+        }
+        collectionView.isHidden = fetchedObjects.count == 0 && !isLoadingCollectionView
     }
     
     func getRandomPage() -> Int? {
@@ -128,6 +137,7 @@ class PhotoAlbumViewController: UIViewController {
         guard let pinPhotos = mapPin.photos, pinPhotos.count > 0 else {
             self.loadPhotos(completion: {
                 self.updateBottomToolbarCenterButton()
+                self.updateCollectionViewVisibility()
             })
             return
         }
@@ -136,15 +146,14 @@ class PhotoAlbumViewController: UIViewController {
     // MARK: - API Requests
     func loadPhotos(for page: Int = 1, completion: (() -> Void)? = nil) {
         
+        isLoadingCollectionView = true
         FlickrService().findPhotos(atLatitude: mapPin.latitude, longitude: mapPin.longitude, page: page, success: { (photosSearchResponse) in
     
             guard let photos = photosSearchResponse?.photos?.photo, let pages = photosSearchResponse?.photos?.pages, let perPage = photosSearchResponse?.photos?.perPage, photos.count > 0  else {
                 self.collectionView.isHidden = true
+                self.pages = nil
+                self.perPage = nil
                 return
-            }
-            
-            DispatchQueue.main.async {
-                self.collectionView.isHidden = false
             }
             
             self.pages = pages
@@ -152,13 +161,16 @@ class PhotoAlbumViewController: UIViewController {
             
             CoreDataController.shared.persistFlickrPhotos(photos, mapPin: self.mapPin, context: .view, success: { (persistedPhotos) in
                 debugPrint("persistFlickrPhotos success")
+                self.isLoadingCollectionView = false
             }, onFailure: { (persistenceError) in
+                self.isLoadingCollectionView = false
                 AlertHelper.showAlert(in: self, withTitle: "Error", message: persistenceError?.message ?? ErrorMessage.unknown.rawValue, leftAction: UIAlertAction(title: "Retry", style: .default, handler: { (action) in
                     self.loadPhotos(completion: completion)
                 }), rightAction: UIAlertAction(title: "Ok", style: .default, handler: nil))
-            })
+            }, onCompletion: completion)
             
         }, onFailure: { (serviceError) in
+            self.isLoadingCollectionView = false
             AlertHelper.showAlert(in: self, withTitle: "Error", message: serviceError?.message ?? ErrorMessage.unknown.rawValue, leftAction: UIAlertAction(title: "Retry", style: .default, handler: { (action) in
                 self.loadPhotos()
             }), rightAction: UIAlertAction(title: "Ok", style: .default, handler: nil))
@@ -169,6 +181,7 @@ class PhotoAlbumViewController: UIViewController {
     func deleteAllObjectsAndReloadWithRandomPage() {
         
         guard let objectsToDelete = fetchedResultsController.fetchedObjects, objectsToDelete.count > 0 else {
+            self.loadPhotos()
             return
         }
         
@@ -309,6 +322,7 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
             }
         }, completion: { _ in
             self.updateBottomToolbarCenterButton()
+            self.updateCollectionViewVisibility()
         })
     }
     
@@ -316,7 +330,6 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
         insertedIndexPaths = [IndexPath]()
         deletedIndexPaths = [IndexPath]()
         updatedIndexPaths = [IndexPath]()
-        updateBottomToolbarCenterButton()
     }
     
 }
